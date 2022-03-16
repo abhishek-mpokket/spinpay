@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use App\Models\Users;
 use Illuminate\Support\Facades\Hash;
 use App\Models\UserData;
@@ -12,7 +14,7 @@ use Illuminate\Support\Facades\Validator;
 class UserController extends Controller
 {
     public function store_users(Request $request){
-        $validate=$request->validate([
+        $validate=Validator::make($request->all(),[
             'name'=>'required',
             'email'=>'required',
             'phone'=>'required',
@@ -22,24 +24,50 @@ class UserController extends Controller
         ]);
 
         $users=new Users();
-        if($users->where('email',$request['email'])->get()->first()){
+        if($validate->fails()){
+            $flag=false;
             return response()->json([
-                'msg' => 'this email is already registered with us, please login.',
-                'code'=> 400,
+                'message' => $validate->errors(),
+                "status" => 400
             ]);
         }
-        else{
-            $users->name=$request['name'];
-            $users->email=$request['email'];
-            $users->phone=$request['phone'];
-            $users->password=Hash::make($request['password']);
-            $users->role_id=$request['role_id'];
-            $users->save();
+
+        
+        try{
+            if($users->where('email',$request['email'])->get()->first()){
+                return response()->json([
+                    'msg' => 'this email is already registered with us, please login.',
+                    'code'=> 400,
+                ]);
+            }
+            else{
+                $users->name=$request['name'];
+                $users->email=$request['email'];
+                $users->phone=$request['phone'];
+                $users->password=Hash::make($request['password']);
+                $users->role_id=$request['role_id'];
+                $ifsaved = $users->save();
+                if($ifsaved == 1){
+                    return response()->json([
+                        'message' => 'success',
+                        "status" => 200
+                    ]);
+                }
+                else{
+                    return response()->json([
+                        'message' => 'data not saved',
+                        "status" => 400
+                    ]);
+                }
+            }
+        }
+        catch(QueryException $e){
             return response()->json([
-                'msg' => 'success',
-                'code'=> 200,
+                'message' => 'Internal Server Error',
+                "status" => 500
             ]);
         }
+        
         
     }
 
@@ -78,23 +106,60 @@ class UserController extends Controller
             'user_id'=> 'required',
             'master_document_id' => 'required',
             'document_number' => 'required',
-            'document_image' => 'required'
+            'pan_img' => 'required'
         ]);
-
+        
+        $user_doc=new UserDocument();
         if($validate->fails()){
             $flag=false;
-            return $data['message']['statusText']="Validation Failed".$validate->errors();
+            return response()->json([
+                'message' => $validate->errors(),
+                "status" => 400
+            ]);
         }
         else{
-            $user_doc=new UserDocument();
-            $user_doc->user_id= $request['user_id'];
-            $user_doc->master_document_id= $request['master_document_id'];
-            $user_doc->document_number= $request['document_number'];
-            $user_doc->document_image= $request['document_image'];
-            $user_doc->is_verified= $request['is_verified'];
-            $user_doc->save();
+            $size=$request->file('pan_img')->getsize();
+            if($size > 200000){
+                return response()->json([
+                    "message" => "image size should be less than 100kb",
+                    "status" => 400
+                ]);
+            }
+        }
+
+        try{
+            if($user_doc->where('document_number',$request['document_number'])->get()->first()){
+                return response()->json([
+                    'message' => "this document number already exists",
+                    'status' => 400
+                ]);
+            }
+    
+            else{
+                $user_doc->user_id= $request['user_id'];
+                $user_doc->master_document_id= $request['master_document_id'];
+                $user_doc->document_number= $request['document_number'];
+                $path = $request->file('pan_img')->store('public/images/pan_images');
+                $user_doc->document_image= $path;
+                $ifsaved = $user_doc->save();
+                if($ifsaved == 1){
+                    return response()->json([
+                        'message' => 'success',
+                        "status" => 200
+                    ]);
+                }
+                else{
+                    return response()->json([
+                        'message' => 'data not saved',
+                        "status" => 400
+                    ]);
+                }
+            }
+        }
+        catch(QueryException $e){
             return response()->json([
-                'message' => 'success',
+                'message' => 'Internal Server Error',
+                "status" => 500
             ]);
         }
     }
