@@ -25,3 +25,4 @@ Route::post("store_users",[UserController::class,"store_users"]);
 Route::post('/userdata/{id}', [UserController::class, 'userdata']);
 //for to store pancard details
 Route::post('pancard',[UserController::class, 'pancard']);
+Route::get('checkDocs',[UserController::class, 'checkDocs']);

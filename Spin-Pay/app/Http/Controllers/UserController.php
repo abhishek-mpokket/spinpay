@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\UserData;
 use App\Models\UserDocument;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -119,7 +120,7 @@ class UserController extends Controller
         }
         else{
             $size=$request->file('pan_img')->getsize();
-            if($size > 200000){
+            if($size > 7000000){
                 return response()->json([
                     "message" => "image size should be less than 100kb",
                     "status" => 400
@@ -162,5 +163,23 @@ class UserController extends Controller
                 "status" => 500
             ]);
         }
+    }
+
+    public function checkDocs(Request $request){
+        $userdoc = new UserDocument();
+        // // $reqid=$request['id'];
+        // $docs = $userdoc
+        //         ->where('user_id',$request['id'])
+        //         ->wherein('master_document_id',function($query){
+        //             $query->select('master_document_id')
+        //                   ->from(with(new UserDocument)->getTable())
+        //                   ->where('user_id','2');
+        //         })
+        //         ->first();
+        // return $docs;
+
+        return $userdoc->select('master_document_id')
+                        ->where('master_document_id',['1','2','3','4'])
+                        ->where('user_id',$request['id'])->get();
     }
 }
