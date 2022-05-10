@@ -557,7 +557,6 @@ $(document).ready(function() {
 
 
     $('#completePayment').click(function() {
-        $('#low_amount_error_message').hide();
         let userrequestids = $('#PassingRequestID').text();
         $.ajax({
             url: "/api/approveloan",
@@ -726,5 +725,6 @@ function DocumentReupload(master_document_id, document_number) {
 
 function GiveLoan(details) {
     $('#PassingRequestID').html(details);
+     $('#low_amount_error_message').hide();
     $('#giveloan').click();
 }
